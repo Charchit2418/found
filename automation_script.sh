@@ -1,23 +1,14 @@
 #!/bin/bash
 
-# Variables
-USER1="sanskriti1"
-USER2="sanskriti2"
-HOME1="/home/$USER1/keys"
-HOME2="/home/$USER2/keys"
-SERVER="kali"
+# Generate and sign file
+echo "Auto-generated file" > ~/char1/cron_file.txt
+gpg --sign --output ~/char1/cron_file.sig --detach-sig ~/char1/cron_file.txt
 
-# Encrypt data for USER2
-sudo -u $USER1 -i gpg --armor --encrypt --recipient $USER2@example.com $HOME1/file_to_sign.txt
-sudo -u $USER1 -i gpg --armor --encrypt --recipient $USER2@example.com $HOME1/file_to_sign.txt.sig
+# Encrypt the file with the public key of charchit2
+openssl rsautl -encrypt -inkey ~/.ssh/id_rsa_charchit2.pub -pubin -in ~/char1/cron_file.txt -out ~/char1/encrypted_file.enc
 
-# Transfer encrypted files to USER2 using SCP
-scp $HOME1/file_to_sign.txt.asc $USER2@$SERVER:$HOME2/
-scp $HOME1/file_to_sign.txt.sig.asc $USER2@$SERVER:$HOME2/
+# Send to charchit2
+scp ~/char1/encrypted_file.enc charchit2@kali:~/char2/
 
-# On USER2's side: Decrypt files (this should be run on USER2's machine or after switching to USER2)
-sudo -u $USER2 -i gpg --decrypt $HOME2/file_to_sign.txt.asc > $HOME2/decrypted_file_to_sign.txt
-sudo -u $USER2 -i gpg --decrypt $HOME2/file_to_sign.txt.sig.asc > $HOME2/decrypted_file_to_sign.sig
-
-# Verify the signature
-sudo -u $USER2 -i gpg --verify $HOME2/decrypted_file_to_sign.sig $HOME2/decrypted_file_to_sign.txt
+# Decrypt on charchit2
+ssh charchit2@kali "openssl rsautl -decrypt -inkey ~/.ssh/id_rsa -in ~/char2/encrypted_file.enc -out ~/char2/decrypted_file.txt"
